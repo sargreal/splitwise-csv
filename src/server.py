@@ -1,22 +1,20 @@
+import multiprocessing
 from flask import Flask, request
-app = Flask(__name__)
+import json
 
 
-def shutdown_server():
-        func = request.environ.get('werkzeug.server.shutdown')
-        if func is None:
-                raise RuntimeError('Not running with the Werkzeug Server')
-        func()
+def oauth_server(queue: multiprocessing.Queue):
+    app = Flask(__name__)
 
-@app.route('/')
-def authorize():
-        print request.args['oauth_verifier']
-        shutdown_server()
+    @app.route('/')
+    def authorize():
+        queue.put({"redirect_uri": request.url,
+                   "code": request.args["code"], "state": request.args["state"]})
+
         return "Thank you, you can close the tab"
 
-@app.route('/test')
-def test():
+    @app.route('/test')
+    def test():
         return "Hello!"
 
-if __name__ == "__main__":
-    app.run()
+    app.run('localhost', 5000)
